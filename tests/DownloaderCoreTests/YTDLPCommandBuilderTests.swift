@@ -57,6 +57,15 @@ func destinationParserCapturesVideoRemuxerOutput() {
 }
 
 @Test
+func destinationParserPreservesQuotesInsideWrappedPaths() {
+    let destination = YTDLPOutputParser.destination(
+        from: #"[Merger] Merging formats into "/tmp/SKD Downloads/Artist - "Live".mkv""#
+    )
+
+    #expect(destination == "/tmp/SKD Downloads/Artist - \"Live\".mkv")
+}
+
+@Test
 func mkvVideoArgsIncludeExplicitRemuxContainer() {
     let config = DownloadConfiguration()
     let args = YTDLPCommandBuilder.build(

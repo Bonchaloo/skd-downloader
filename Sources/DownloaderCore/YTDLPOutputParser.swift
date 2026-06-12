@@ -26,9 +26,14 @@ public enum YTDLPOutputParser {
     }
 
     public static func destination(from line: String) -> String? {
+        let quotedMergePrefix = "[Merger] Merging formats into \""
+        if line.hasPrefix(quotedMergePrefix) {
+            let rawValue = String(line.dropFirst(quotedMergePrefix.count))
+            return destinationPath(from: rawValue, trailingWrapperQuote: true)
+        }
+
         let prefixes = [
             "[download] Destination: ",
-            "[Merger] Merging formats into \"",
             "[ExtractAudio] Destination: ",
             "[ffmpeg] Destination: ",
         ]
@@ -36,12 +41,12 @@ public enum YTDLPOutputParser {
         for prefix in prefixes {
             guard line.hasPrefix(prefix) else { continue }
             let rawValue = String(line.dropFirst(prefix.count))
-            return rawValue.replacingOccurrences(of: "\"", with: "")
+            return destinationPath(from: rawValue)
         }
 
         if let range = line.range(of: "Destination: ") {
             let rawValue = String(line[range.upperBound...])
-            return rawValue.replacingOccurrences(of: "\"", with: "")
+            return destinationPath(from: rawValue)
         }
 
         if line.contains(" has already been downloaded") {
@@ -104,6 +109,22 @@ public enum YTDLPOutputParser {
                 return lhs.sortScore > rhs.sortScore
             }
     }
+}
+
+private func destinationPath(from rawValue: String, trailingWrapperQuote: Bool = false) -> String {
+    var value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    if trailingWrapperQuote, value.last == "\"" {
+        value.removeLast()
+        return value
+    }
+
+    if value.first == "\"", value.last == "\"", value.count >= 2 {
+        value.removeFirst()
+        value.removeLast()
+    }
+
+    return value
 }
 
 private struct FormatPayload: Decodable {
